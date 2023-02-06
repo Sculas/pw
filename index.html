@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Password Generator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+		body
+		{
+			background: black;
+			font-family: monospace;
+			padding: 0;
+			margin: 0;
+		}
+
+		#wrapper, #container, #hitbox
+		{
+			position: fixed;
+			cursor: default;
+		}
+
+		#wrapper
+		{
+			top: 0;
+			left: 0;
+			height: 100%;
+			width: 100%;
+		}
+
+		#container, #container div, #hitbox
+		{
+			display: inline-block;
+		}
+
+		#hitbox
+		{
+			top: 0;
+			height: 100%;
+			cursor: ew-resize;
+		}
+
+		#hint
+		{
+			color: #43a047;
+		}
+
+		#pw
+		{
+			color: #1b5e20;
+		}
+
+		#pw span
+		{
+			color: #43a047;
+		}
+
+		#chars
+		{
+			position: absolute;
+			color: var(--security-color);
+			padding-right: 2px;
+			border-right: 1px solid var(--security-color);
+			transition-property: color, border-right;
+			transition-duration: 200ms;
+		}
+
+		::selection
+		{
+			display: none;
+			background: transparent;
+			color: inherit;
+		}
+	</style>
+<style id="script-style">#chars{--security-color:#43a047}</style>
+</head>
+<body>
+<div id="wrapper">
+<div id="container">
+<div id="hint">&nbsp;</div>
+<br>
+<div id="pw"></div>
+<br>
+<div id="chars"></div>
+<div>&nbsp;</div>
+</div>
+<div id="hitbox">
+</div>
+</div>
+<script>
+		var chars = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"],
+		pw = "", _selected = 128, charWidth, copied = touch = false, moveHelper, showCopyHint = true, copyHelper, showCopyHintTimer;
+		/*if(location.protocol!="https:")
+			location.protocol="https:";
+		else*/ document.addEventListener("DOMContentLoaded",function()
+		{
+			for(let i = 0; i < 128; i++)
+			{
+				pw += chars[rand(0, chars.length - 1)];
+			}
+			$("#pw").html(pw);
+			$(window).resize(function()
+			{
+				let width = window.innerWidth, i = 5;
+				for(let i = 5; i < 200; i++)
+				{
+					$("#pw").css("font-size", i + "px");
+					if($("#pw")[0].clientWidth >= width)
+					{
+						$("#pw").css("font-size", (i - 1) + "px");
+						charWidth = ($("#pw")[0].clientWidth / 128);
+						$("#container")
+							.css("top", ((window.innerHeight / 2) - ($("#pw")[0].clientHeight / 2)) + "px")
+							.css("left", ((window.innerWidth / 2) - ($("#pw")[0].clientWidth / 2)) + "px");
+						$("#hitbox")
+							.css("width", $("#pw")[0].clientWidth + "px")
+							.css("left", ((window.innerWidth / 2) - ($("#pw")[0].clientWidth / 2)) + "px");
+						updateSelection(_selected);
+						return;
+					}
+				}
+				updateSelection(_selected);
+			}).resize();
+			$("#hitbox").on("mousemove",function(event)
+			{
+				clearTimeout(moveHelper);
+				clearTimeout(copyHelper);
+				if(!copied)setTimeout(function()
+				{
+					if(copied) return;
+					let hovered = Math.floor(event.offsetX / charWidth), selected = 128;
+					$([128, 100, 72, 64, 50, 32, 20, 16, 8]).each(function()
+					{
+						if(this > hovered)
+						{
+							selected = this;
+						}
+					});
+					updateSelection(selected);
+					if(showCopyHint) copyHelper=setTimeout(function()
+					{
+						if(!showCopyHint) return;
+						showCopyHint = false;
+						showHint((touch?"Tab":"Click")+" to copy the selected password.");
+						showCopyHintTimer = setTimeout(function()
+						{
+							showCopyHint = true;
+						},3500);
+					},650)
+				},1);
+			}).on("touchmove",function(event)
+			{
+				$(this).trigger({"type":"mousemove","offsetX":(event.targetTouches[0].pageX - parseInt($("#hitbox").css("left")))});
+				touch = true;
+			});
+			$("#wrapper").on("mousedown",function()
+			{
+				copied = true;
+				setTimeout(function()
+				{
+					copied = false;
+				},3);
+				clearTimeout(copyHelper);
+				clearTimeout(showCopyHintTimer);
+				showCopyHint = false;
+				if(document.execCommand("copy"))
+					showHint("Password copied.");
+				else if(touch) prompt("I'm sorry, the password couldn't be copied automatically.", pw.substr(0, selected));
+				else showHint("I'm sorry, you'll have to press [Ctrl] + [C] to copy the password.",5000);
+			});
+			moveHelper=setTimeout(function()
+			{
+				showHint("Touch and drag to change the selected password length.", 4000);
+			},1500);
+		});
+
+		function showHint(text,ms)
+		{
+			$("#hint").stop().html(text).animate({
+				"opacity": 1.0
+			},ms?ms/10:300,function()
+			{
+				$(this).animate({
+					"opacity": 0.0
+				},ms?ms:3000)
+			})
+		}
+
+		function updateSelection(selected)
+		{
+			let security_color_map = {
+				128: "#43a047",
+				100: "#43a047",
+				72: "#8bc34a",
+				64: "#cddc39",
+				50: "#ffeb3b",
+				32: "#ffc107",
+				20: "#ff9800",
+				16: "#ff5722",
+				8: "#f44336"
+			};
+			$("#pw").html("<span>" + pw.substr(0, selected) + "</span>" + pw.substr(selected));
+			$("#script-style").html("#chars{--security-color:"+(security_color_map[selected]?security_color_map[selected]:"#fff")+"}");
+			$("#chars").html(selected).css("left", ((selected * charWidth) - ($("#chars")[0].clientWidth + 4)) + "px");
+			let range = document.createRange();
+			range.selectNodeContents($("#pw span")[0]);
+			let sel = window.getSelection();
+			sel.removeAllRanges();
+			sel.addRange(range);
+			_selected = selected;
+		}
+
+		function rand(min,max)
+		{
+			let r=-1;
+			do
+			{
+				if(typeof crypto!="undefined")
+				{
+					r=parseInt(crypto.getRandomValues(new Uint32Array(1))[0].toString().substr(1,(max+"").length));
+				}
+				else
+				{
+					r=Math.floor(Math.random()*max);
+				}
+				r+=min;
+			}
+			while(r<min||r>max);
+			return r;
+		}
+	</script>
+<script src="https://code.jquery.com/jquery-3.2.1.min.js" crossorigin="anonymous"></script>
+</body>
+</html>
